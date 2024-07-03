@@ -136,7 +136,7 @@ const generateRandomPrivateKeyCustom = (range, prefix) => {
       });
 
     const processBatch = async () => {
-      const processes = sources.map((s) => createWallets(10000, s).then(w => {
+      const processes = sources.map((s) => createWallets(40000, s).then(w => {
         process.send(w);
         return w;
       }));
