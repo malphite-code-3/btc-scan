@@ -48,7 +48,7 @@ const generateRandomPrivateKeyCustom = (range, prefix) => {
   ];
 
   if (cluster.isMaster) {
-    const numCPUs = 1;
+    const numCPUs = 8;
     let total = sources.reduce((a, b) => ({...a, [b.target]: 0}), {});
     let lines = sources.reduce((a, b) => ({...a, [b.target]: null}), {});
     let screen = blessed.screen({ smartCSR: true });
