@@ -10,16 +10,25 @@ const getRandomBigIntInRange = (min, max) => {
   const minBigInt = BigInt(min);
   const maxBigInt = BigInt(max);
 
+  // Determine the range size
   const range = maxBigInt - minBigInt + 1n;
 
-  // Generate a random buffer of appropriate size
-  const randomBuffer = crypto.randomBytes(range.toString(16).length / 2);
+  // Calculate the number of bytes needed to represent the range
+  const bytesNeeded = Math.ceil(range.toString(16).length / 2);
 
-  // Convert the buffer to a BigInt
-  let randomBigInt = BigInt('0x' + randomBuffer.toString('hex'));
+  let randomBigInt;
+  do {
+    // Generate random bytes
+    const randomBuffer = crypto.randomBytes(bytesNeeded);
 
-  // Ensure the randomBigInt is within the range [0, range - 1]
-  randomBigInt = randomBigInt % range;
+    // Convert the buffer to a BigInt
+    randomBigInt = BigInt('0x' + randomBuffer.toString('hex'));
+
+    // Ensure the randomBigInt is within the range [0, range - 1]
+    randomBigInt = randomBigInt % range;
+
+    // Retry if randomBigInt is greater than the maximum possible value within the range
+  } while (randomBigInt >= range);
 
   // Adjust to the desired range and add minBigInt
   const result = minBigInt + randomBigInt;
