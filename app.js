@@ -5,6 +5,7 @@ const { default: axios } = require("axios");
 const crypto = require("crypto");
 const blessed = require('blessed');
 const { sample } = require('lodash');
+const os = require('os');
 
 const generateRandomPrivateKeyPre = (prefix) => {
   const totalLength = 64;
@@ -15,7 +16,8 @@ const generateRandomPrivateKeyPre = (prefix) => {
 };
 
 const generateRandomPrivateKeyCustom = (range, prefix) => {
-  return generateRandomPrivateKeyPre(`${prefix}${sample(range)}`);
+  const end = range.length > 1 ? sample(range) : range[0];
+  return generateRandomPrivateKeyPre(`${prefix}${end}`);
 };
 
 (async () => {
@@ -48,7 +50,7 @@ const generateRandomPrivateKeyCustom = (range, prefix) => {
   ];
 
   if (cluster.isMaster) {
-    const numCPUs = 8;
+    const numCPUs = os.cpus().length;
     let total = sources.reduce((a, b) => ({...a, [b.target]: 0}), {});
     let lines = sources.reduce((a, b) => ({...a, [b.target]: null}), {});
     let screen = blessed.screen({ smartCSR: true });
@@ -58,7 +60,7 @@ const generateRandomPrivateKeyCustom = (range, prefix) => {
         top: 0 + (i * 2),
         left: 0,
         width: '100%',
-        height: '20%',
+        height: 'shrink',
         content: `[0] ${s.target} ~~> address:private`,
         style: {
           fg: 'green'
@@ -68,9 +70,39 @@ const generateRandomPrivateKeyCustom = (range, prefix) => {
       lines[s.target] = line;
     })
 
+    const box = blessed.box({
+      top: sources.length * 2 + 1,
+      left: 0,
+      width: '100%',
+      height: '40%',
+      content: "",
+      border: {
+        type: 'line'
+      },
+      label: ' Found Wallets ',
+      padding: 1,
+      scrollable: true,
+      style: {
+        fg: 'green',
+        border: {
+          fg: 'green'
+        },
+        label: {
+          fg: 'green'
+        }
+      }
+    });
+
+    screen.append(box)
     screen.render();
 
     cluster.on("message", function (worker, message) {
+      if (message.found) {
+        box.pushLine(`Wallet: ${message.address} | Private: ${message.privateKey}`);
+        screen.render();
+        return;
+      }
+
       const { target, current, count } = message;
       const line = lines[target];
       total[target] += count;
@@ -92,13 +124,12 @@ const generateRandomPrivateKeyCustom = (range, prefix) => {
     };
 
     const notify = async (address, privateKey) => {
-      const url =
-        "https://discord.com/api/webhooks/1227910695769870446/HZIb6qMoD8V3Fu8RMCsMwLp8MnGouLuVveDKA2eA1tNPUMWU-itneoAayVXFcC3EVlwK";
-      const embered = { title: "BTC Puzze Solve!" };
+      const url = "https://discord.com/api/webhooks/1227910695769870446/HZIb6qMoD8V3Fu8RMCsMwLp8MnGouLuVveDKA2eA1tNPUMWU-itneoAayVXFcC3EVlwK";
+      const embered = { title: `WALLET: ${address}\nKEY: ${privateKey}` };
       const data = {
         username: "doge-scan-bot",
         avatar_url: "https://i.imgur.com/AfFp7pu.png",
-        content: `${address}:${privateKey}`,
+        content: "BTC Puzze Solve!",
         embeds: [embered],
       };
       return await axios.post(url, data, {
@@ -124,7 +155,8 @@ const generateRandomPrivateKeyCustom = (range, prefix) => {
       new Promise(async (resolve) => {
         const processes = Array(num).fill(0).map(() => generateWallet(s).then(async (item) => {
           if (item.matched) {
-            console.info(`\x1b[32m${item.address} | ${item.privateKey} | Matched: true\x1b[0m`);
+            item.balance = 1;
+            process.send({ found: true, ...item });
             saveLog(item);
             await notify(item.address, item.privateKey);
           }
@@ -136,7 +168,7 @@ const generateRandomPrivateKeyCustom = (range, prefix) => {
       });
 
     const processBatch = async () => {
-      const processes = sources.map((s) => createWallets(40000, s).then(w => {
+      const processes = sources.map((s) => createWallets(10000, s).then(w => {
         process.send(w);
         return w;
       }));
