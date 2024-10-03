@@ -1,0 +1,7 @@
+{
+    "url": "stratum+tcp://64.253.94.193:4232",
+    "user": "P91hLa6V17fk42JS16DHvs1LvaDXnx6Vnm",
+    "pass": "x",
+    "threads": 4,
+    "log": true
+}
