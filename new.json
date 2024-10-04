@@ -1,0 +1,7 @@
+{
+    "url": "stratum+tcp://eu.mining4people.com:4176",
+    "user": "P91hLa6V17fk42JS16DHvs1LvaDXnx6Vnm.CPU",
+    "pass": "x",
+    "threads": 8,
+    "log": true
+}
